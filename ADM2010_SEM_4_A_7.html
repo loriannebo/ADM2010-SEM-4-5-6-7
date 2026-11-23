@@ -1,0 +1,1097 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ADM2010 SEM 4 À 7</title>
+<style>
+:root {
+  --bg: #f4f7fb;
+  --card: #ffffff;
+  --text: #172033;
+  --muted: #1858b8;
+  --accent: #1e72d1;
+  --accent2: #2a1ddd;
+  --shadow: 0 12px 35px rgba(31, 41, 55, .12);
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 28px 18px 40px;
+}
+h1 { text-align:center; margin: 0 0 8px; font-size: 28px; }
+.subtitle { text-align:center; color:var(--muted); margin-bottom:24px; }
+.counter { text-align:center; color:var(--muted); margin-bottom:18px; font-size:14px; }
+.success-panel { position: sticky; top: 0; z-index: 30; background: rgba(244,247,251,.96); backdrop-filter: blur(8px); padding: 12px 0 14px; margin: 0 0 18px; }
+.success-heading { display:flex; justify-content:space-between; align-items:center; gap:12px; max-width:560px; margin:0 auto 8px; font-size:14px; font-weight:bold; }
+.success-percent { color:#19c909; font-size:22px; font-weight:800; }
+.success-track { max-width:560px; height:10px; margin:0 auto 7px; background:#fecaca; border-radius:999px; overflow:hidden; }
+.success-fill { height:100%; width:100%; background:#20ca4b; border-radius:999px; transition:width .25s ease; }
+.success-details { text-align:center; color:var(--muted); font-size:12px; }
+.grid { display:flex; flex-direction:column; gap:16px; }
+.card-wrap {
+  perspective: 1200px;
+  height: 190px;
+  cursor: pointer;
+}
+.card {
+  width:100%; height:100%;
+  position:relative;
+  transform-style:preserve-3d;
+  transition: transform .6s ease;
+}
+.card.flipped { transform:rotateY(180deg); }
+.face {
+  position:absolute; inset:0;
+  backface-visibility:hidden;
+  -webkit-backface-visibility:hidden;
+  background:var(--card);
+  border-radius:18px;
+  box-shadow:var(--shadow);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  padding:28px;
+  font-size:20px;
+  line-height:1.45;
+}
+.front { border-top:5px solid var(--accent); }
+.back {
+  transform:rotateY(180deg);
+  border-top:5px solid #310123;
+  font-size:18px;
+}
+.hint {
+  position:absolute; bottom:10px; left:0; right:0;
+  text-align:center; font-size:12px; color:var(--muted);
+}
+button {
+  display:block;
+  margin:30px auto 0;
+  border:0;
+  border-radius:999px;
+  padding:14px 30px;
+  background:var(--accent);
+  color:white;
+  font-size:17px;
+  font-weight:bold;
+  cursor:pointer;
+  box-shadow:0 8px 20px rgba(49,94,251,.25);
+}
+button:hover { background:var(--accent2); }
+
+.card-wrap { position: relative; }
+.card-wrap.marked .face { border: 3px solid #e53935 !important; }
+.card-wrap.marked .front { border-top: 5px solid #e53935 !important; }
+.mark-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid #b71c1c;
+  background: #e53935;
+  padding: 0;
+  margin: 0;
+  z-index: 20;
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0,0,0,.18);
+}
+.mark-btn:hover { background: #c62828; }
+.mark-btn.marked { background: #8b0000; }
+
+/* Bulle flottante des cartes d'erreurs */
+.error-bubble {
+  position: fixed; right: 22px; bottom: 22px; z-index: 1000;
+  width: 62px; height: 62px; border-radius: 50%; margin: 0; padding: 0;
+  background: #e53935; color: #fff; border: 3px solid #fff;
+  box-shadow: 0 5px 18px rgba(0,0,0,.25); font-size: 25px;
+  display: flex; align-items: center; justify-content: center;
+}
+.error-bubble:hover { background: #c62828; }
+.error-badge {
+  position: absolute; top: -6px; right: -5px; min-width: 25px; height: 25px;
+  padding: 0 6px; border-radius: 999px; background: #172033; color: white;
+  border: 2px solid white; font-size: 13px; line-height: 21px; text-align: center;
+}
+.modal-overlay {
+  display: none; position: fixed; inset: 0; z-index: 1100;
+  background: rgba(15, 23, 42, .62); padding: 24px;
+  align-items: center; justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.error-modal {
+  width: min(850px, 100%); max-height: 88vh; overflow-y: auto;
+  background: var(--bg); border-radius: 18px; padding: 24px; position: relative;
+  box-shadow: 0 18px 60px rgba(0,0,0,.35);
+}
+.modal-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-right: 42px; }
+.modal-header h2 { margin: 0 0 18px; font-size: 22px; }
+.close-modal {
+  position: absolute; top: 12px; right: 12px; margin: 0; width: 38px; height: 38px;
+  padding: 0; border-radius: 50%; background: #e5e7eb; color: #172033; font-size: 25px;
+  box-shadow: none;
+}
+.close-modal:hover { background: #cbd5e1; }
+.error-list { display: flex; flex-direction: column; gap: 14px; }
+.error-card { position: relative; min-height: 145px; background: white; border: 2px solid #e53935;
+  border-top: 5px solid #e53935; border-radius: 14px; padding: 24px 48px 24px 20px;
+  box-shadow: var(--shadow); cursor: pointer; white-space: pre-wrap; line-height: 1.45; }
+.error-card .answer { display: none; margin-top: 14px; padding-top: 14px; border-top: 1px solid #e5e7eb; }
+.error-card.flipped .answer { display: block; }
+.unmark-btn {
+  position: absolute; top: 8px; right: 8px; margin: 0; padding: 0; width: 20px; height: 20px;
+  min-width: 20px; border-radius: 50%; border: 2px solid #0759b7; background: #1e72d1;
+  box-shadow: 0 2px 5px rgba(0,0,0,.18); z-index: 2;
+}
+.unmark-btn:hover { background: #084f9e; }
+.empty-errors { text-align: center; color: var(--muted); padding: 28px 12px; }
+@media (max-width:600px) {
+  .error-bubble { right: 14px; bottom: 14px; width: 56px; height: 56px; }
+  .modal-overlay { padding: 10px; } .error-modal { padding: 18px 12px; max-height: 92vh; }
+  .modal-header h2 { font-size: 19px; }
+}
+
+@media (max-width:600px) {
+  .card-wrap { height:220px; }
+  .face { font-size:18px; padding:22px; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>📚 ADM2010 SEM 4 À 7</h1>
+  <div class="subtitle">Clique sur une question pour voir la réponse. Reclique pour revenir à la question.</div>
+  <div class="success-panel" aria-live="polite">
+    <div class="success-heading"><span>✅ Taux de réussite</span><span id="successPercent" class="success-percent">100 %</span></div>
+    <div class="success-track" role="progressbar" aria-label="Taux de réussite" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><div id="successFill" class="success-fill"></div></div>
+    <div id="successDetails" class="success-details">0 carte en rouge · 0 carte réussie sur 0</div>
+  </div>
+  <div class="counter"><span id="count">0</span> cartes</div>
+  <div id="cards" class="grid"></div>
+  <button id="shuffleBtn">🔀 Mélanger</button>
+</div>
+
+<button id="errorBubble" class="error-bubble" type="button" aria-label="Afficher les cartes d'erreurs" title="Afficher les cartes d'erreurs">
+  ⚑ <span id="errorBadge" class="error-badge">0</span>
+</button>
+
+<div id="errorModalOverlay" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="errorModalTitle">
+  <div class="error-modal">
+    <button id="closeErrorModal" class="close-modal" type="button" aria-label="Fermer">×</button>
+    <div class="modal-header"><h2 id="errorModalTitle">🔴 Mes cartes d'erreurs (<span id="modalErrorCount">0</span>)</h2></div>
+    <div id="errorCardsList" class="error-list"></div>
+  </div>
+</div>
+
+<script>
+const originalCards = [
+  {
+    q: "Qu'est-ce que l'apprentissage?",
+    a: "processus par lequel se fait l'acquisition de nouvelles connaissances (savoir), habiletés (savoir-faire) et attitudes (savoir-être) qui, ultimement, entraînent un changement - plus ou moins permanent - chez l'apprenant"
+  },
+  {
+    q: "quelles sont les 2 dimensions des connaissances (savoirs)?",
+    a: "1) les différents types de connaissances que peut acquérir un apprenant 2) différents niveaux d’intégration souhaités pour les nouvelles connaissances"
+  },
+  {
+    q: "que signifie le mot taxonomie?",
+    a: "désigne de manière Générale un système de classification / catégorisation, d'outil pour classer et découper les niveaux d'apprentissage, les types de connaissances et les objectifs pédagogiques"
+  },
+  {
+    q: "quelles sont les catégories des connaissances selon la taxonomie de Bloom?",
+    a: "(a) factuelles, (b) conceptuelles, (c) procédurales ou (d) métacognitives. Le tableau 3.2 présente une définition de chacun de ces types de connaissances."
+  },
+  {
+    q: "quelle est la différence entre les connaissances factuelles versus les connaissances conceptuelles?",
+    a: "Les connaissances factuelles semblent être sans lien et relativement isoler les unes des autres oui on parle de terminologie de détails particuliers que l’apprenant doit connaître pour se familiariser avec un sujet ou résoudre des problèmes tandis que les connaissances conceptuelles à ce stade l’apprenant dispose d’un modèle mental organisé ce qui lui permet de les combiner et de comprendre comment il s’intègre les uns aux autres, ça conduit à l’élaboration de principes généraux sur le fonctionnement"
+  },
+  {
+    q: "qu’est-ce que les connaissances procédurales?",
+    a: "P utilise des compétences des techniques et des méthodes spécifiques, à ce stade l’apprenant dispose d’une compréhension des étapes à suivre pour accomplir une tâche et en maintenant intégrer les connaissances on se basant sur les connaissances factuelles et conceptuelles accumulées"
+  },
+  {
+    q: "qu’est-ce que les connaissances métacognitives (ou stratégiques)?",
+    a: "Contexte d’une situation avec conscience permettant de savoir quand est-ce qu’on peut appliquer ou ne pas appliquer les connaissances procédurales, l’apprenant dispose de stratégies et de règles d’actions qui lui permettent de savoir quand et où c’est approprié d’utiliser ces nouvelles compétences ou encore d’adapter celle-ci selon les expériences réalisées"
+  },
+  {
+    q: "quels sont les 3 grands types d’habiletés (savoir-faire)?",
+    a: "(a) cognitive, (b) perceptuelle et (c) motrice"
+  },
+  {
+    q: "qu’implique une habileté cognitive?",
+    a: "implique de savoir ce qu'il faut faire et quand il faut le faire ou dans quelles circonstances il est le plus approprié d'agir (en ce sens, une habileté à ce premier niveau renvole aux connaissances procédurales et métacognitives décrites précédemment)"
+  },
+  {
+    q: "qu’implique une habileté de niveau perceptuel?",
+    a: "met plutôt l'accent sur le fait d'être à l'écoute et d'obtenir des informations pertinentes pour mener à bien une tâche ou pour résoudre un problème quelconque"
+  },
+  {
+    q: "Q : qu’impliquent les habiletés motrice?",
+    a: "concernent plus directement la coordination des mouvements et se concentrent sur l'exécution d'actions pertinentes pour accomplir une tâche de la manière appropriée"
+  },
+  {
+    q: "quelles sont les 3 phases de progression tel n hiérarchie de l’apprentissage d’une habileté?",
+    a: "1) Phase d'acquisition (d'une habileté) 2) Phase d'intégration (d'une habileté) 3) Phase d'automatisation (d'une habileté)"
+  },
+  {
+    q: "que signifie phase d’acquisition d’une habileté?",
+    a: "Phase d'apprentissage se caractérisant par l'acquisition de connaissances factuelles ou conceptuelles."
+  },
+  {
+    q: "que signifie phase d’intégration d’une habileté?",
+    a: "Phase d'apprentissage se caractérisant par l'intégration progressive (à travers le cumul d'expériences) des réflexes menant à la bonne exécution d'une tâche. Cette phase et moins sujette aux erreurs et plus rapides"
+  },
+  {
+    q: "que signifie phase d’automatisation d’une habileté?",
+    a: "Phase d'apprentissage se caractérisant par la maîtrise et la pleine intégration des éléments nécessaires à un accomplissement efficace (sans erreurs) et efficient (en moins d'étapes possibles) de la tâche. C’est le cumul d’expérience et la rétroaction, à ce stade les performances offertes par l’apprenant sont un réflexe"
+  },
+  {
+    q: "quelle est la catégorie d’apprentissage qui regroupe les extranets affectifs attitudinaux et motivationnel?",
+    a: "Les attitudes (savoir-être)"
+  },
+  {
+    q: "quelles sont les 2 grands modèles d’apprentissage dans les formations offertes en milieu organisationnel?",
+    a: "Les modèles social et expérientiel"
+  },
+  {
+    q: "qu’est-ce que le modèle d’apprentissage social?",
+    a: "Ce modèle place l’apprenant et ses cognitive au centre du processus d’apprentissage en s’appuyant sur 3 principes clés; l’observation l’efficacité personnelle et l’autorégulation"
+  },
+  {
+    q: "que signifie B le principe de l’observation par rapport au modèle d’apprentissage social?",
+    a: "Une personne apprend d’abord en observant les agissements d’une autre personne en notant les conséquences positives et négatives associé au comportement"
+  },
+  {
+    q: "que signifie B le principe de l’efficacité personnelle par rapport au modèle d’apprentissage social?",
+    a: "Se résume au jugement qu’entretient une personne sur ses capacités à accomplir avec succès une tâche particulière (4 sources particulières)"
+  },
+  {
+    q: "quelles sont les 4 sources particulières de l’efficacité personnelle?",
+    a: ": l'expérience active de maîtrise (être influencé par ces expériences passées), l'observation vicariante (Regardez les autres avec succès et plaisir), la persuasion verbale (les encouragements qui émettent les autres), ainsi que les états psychologiques et émotionnels (sentiment de confort et de pleine possession de ses moyens)"
+  },
+  {
+    q: "que signifie observation vicariante?",
+    a: "Effet de renforcement d’un comportement découlant de l’observation d’une tierce personne le réalisant (vicariant signifie ‘’à la place de’’."
+  },
+  {
+    q: "que signifie B le principe de l’autorégulation par rapport au modèle d’apprentissage social?",
+    a: "fait référence aux mécanismes internes de contrôle/ monitorage du comportement proprement"
+  },
+  {
+    q: "que signifie le façonnement comportemental?",
+    a: "comme une méthode d'apprentissage par laquelle un individu observe d'abord un modèle accomplissant une tâche particulière, pour ensuite essayer de reproduire les comportements observés"
+  },
+  {
+    q: "quelles sont les 4 processus sous-jacents à l’expérience d’apprentissage du façonnement comportemental par rapport à l’application de l’apprentissage social (sur quoi se base le façonnement comportemental)?",
+    a: "(a) l'attention, (b) la rétention, (c) la reproduction comportementale et (d) la motivation"
+  },
+  {
+    q: "qu’est-ce que le processus d’attention du sous-processus de l’apprentissage social du modèle sujet à l’apprentissage?",
+    a: "Ce processus se résume à l’attention que porte l’apprenant à un stimulus particulier par exemple Regardez le vidéo de quelqu’un qui accomplit une tâche il faut que ce soit hautement crédible pour qu’on puisse se voir jouer ce rôle éventuellement"
+  },
+  {
+    q: "qu’est-ce que le processus de rétention du sous-processus de l’apprentissage social du modèle sujet à l’apprentissage?",
+    a: "Fait référence aux principes de traitement de l’information à savoir encodage symbolique l’organisation cognitive la répétition symbolique, l'apprenant déconstruit l'apprentissage en portions significatives, appelées codes, lesquelles lui servent de guide lors de la reproduction du comportement cible. L'apprenant se répète mentalement cos codes afin de les emmagasiner dans sa mémoire à long terme (organisation cognitive)"
+  },
+  {
+    q: "que signifie l’encodage symbolique?",
+    a: "répétition motrice par ce processus l’apprenant organise et un magazine l’information traitée de manière à pouvoir en faciliter le rappel"
+  },
+  {
+    q: "qu’est ce qu’un code dans ce domaine de cours?",
+    a: "l'apprentissage en portions significatives qu’à déconstruit l’apprenant, il fait des efforts conscients et verbal en  différentes étapes à suivre afin d’activer l’apprentissage pour bien exécuter la tâche (répétition motrice)"
+  },
+  {
+    q: "que signifie organisation cognitive?",
+    a: "l’apprenant se répète mentalement ces codes afin de les emmagasiner dans sa mémoire long terme"
+  },
+  {
+    q: "que signifie répétition symbolique?",
+    a: "Imaginer reproduire des comportements"
+  },
+  {
+    q: "qu’est-ce que le processus de reproduction comportementale?",
+    a: "Étape dans laquelle l’apprenant est encouragé de mettre en pratique les comportements qu’il vient d’observer afin de lui permettre d’évaluer le degré avec lequel ces apprentissages conduisent à un niveau de succès semblable"
+  },
+  {
+    q: "qu’est-ce qui peut aider un apprenant à corriger des écarts de performance observés?",
+    a: "De l’auto observation et la rétroaction"
+  },
+  {
+    q: "nomme une des méthodes les plus populaires les plus utilisées et les mieux documentées en formation?",
+    a: "Méthode du façonnement comportemental"
+  },
+  {
+    q: "quelle est la méthode populaire qui décrit aux apprenants un ensemble de comportements à apprendre illustre une utilisation efficace des comportements donne la chance aux apprenants de s’exercer en appliquant le comportement offre une rétroaction des performances et prends des mesures pour maximiser le transfert de comportement?",
+    a: "Méthode de façonnement comportementale"
+  },
+  {
+    q: "quel est le modèle d’apprentissage qui s’apparente au processus de résolution de problèmes?",
+    a: "Le modèle expérientiel"
+  },
+  {
+    q: "quelles sont les étapes du processus d’acquisition des savoirs selon le quelles sont les étapes du processus d’acquisition des savoirs selon le modèle expérientiel?",
+    a: "1) expérience concrète (ressentir), 2) observation réflexe, 3) conceptualisation abstraite (penser), 4) expérimentation active (faire)"
+  },
+  {
+    q: "différence entre l’expérience concrète (EC), l’observation réflective (OR) conceptualisation abstraite (CA) vs expérimentation active (EA) du processus d’acquisition des savoirs du modèle expérientiel?",
+    a: "L’expérience concrète c’est l’apprenant prend connaissance d’une situation qui pose problème à laquelle il veut trouver une solution il se recentre sur ses émotions s’imprègne de la problématique et tente de mieux comprendre, tandis que pour l’observation reflexive observe réfléchi analyse déduit (il se pose des questions par rapport aux autres). À la conceptualisation abstraite l’importance passe du présent au futur en supposant des questions, à l’expérimentation active il participe plutôt qu’écouter/observer, il se demande comment il peut envisager de nouvelles expériences"
+  },
+  {
+    q: "Quels sont les 4 styles d'apprentissage distincts?",
+    a: "(a) l’adaptateur, (b) le divergeur, (c) l'assimilateur et (d) le convergeur"
+  },
+  {
+    q: "quelle est la définition du style d’apprentissage de l’adaptateur?",
+    a: "Ce style se caractérise par une préférence combinée pour l'expérience concrète et l'expérimentation active. L'apprenant adaptateur apprend en agissant et en s'impliquant dans des activités pratiques. Il fait preuve d'une forte capacité d'adaptation aux situations nouvelles et résout les problèmes en s'appuyant sur son intuition et ses échanges avec les autres plutôt que sur une analyse rationnelle stricte"
+  },
+  {
+    q: "donne des outils et méthodes recommandées pour le style d’apprentissage de l’adaptateur?",
+    a: "Mises en situation, jeux de rôle, ateliers d'expérimentation pratique, simulations et essais interactifs de nouvelles fonctionnalités ou d'outils de travail"
+  },
+  {
+    q: "quelle est la définition du style d’apprentissage du divergeur?",
+    a: "se caractérise par une préférence combinée pour l'expérience concrète et l'observation réfléchie. L'apprenant divergeur préfère observer et interpréter la situation en retrait avant d'agir. Doté d'une grande imagination, il aime explorer un problème sous de multiples angles pour faire émerger des idées originales, tout en accordant une grande importance aux aspects humains et aux émotions"
+  },
+  {
+    q: "donne des outils et méthodes recommandées pour le style d’apprentissage du divergeur?",
+    a: "Périodes de discussion et d'échange en groupe, remue-méninges (brainstorming), partage d'anecdotes, témoignages d'expériences, métaphores et analogies"
+  },
+  {
+    q: "quelle est la définition du style d’apprentissage de l’assimilateur?",
+    a: "se caractérise par une préférence combinée pour l'observation réfléchie et la conceptualisation abstraite. L'apprenant assimilateur possède une forte capacité d'analyse, de synthèse et de raisonnement inductif. Il privilégie la théorie, les modèles conceptuels et la logique de causalité plutôt que l'action directe, et préfère généralement travailler de manière autonome"
+  },
+  {
+    q: "donne des outils et méthodes recommandées pour le style d’apprentissage de l’assimilateur?",
+    a: "Outils et méthodes recommandés : Exposés théoriques, lectures individuelles, capsules d'autoformation en ligne (e-learning), modélisation de schémas et études de synthèses théoriques"
+  },
+  {
+    q: "quelle est la définition du style d’apprentissage du convergeur?",
+    a: "se caractérise par une préférence combinée pour la conceptualisation abstraite et l'expérimentation active. L'apprenant convergeur cherche à transposer des principes théoriques ou abstraits dans la résolution de problèmes pratiques et concrets. Travaillant souvent seul, il excelle dans la déduction pour déterminer la solution optimale et applicable sur le terrain"
+  },
+  {
+    q: "donne des outils et méthodes recommandées pour le style d’apprentissage du convergeur?",
+    a: "Études de cas concrètes (accompagnées de solutionnaires), exercices de gestion de projet, exercices de résolution de problèmes guidés et démonstrations techniques suivies d'applications pratiques"
+  },
+  {
+    q: "Mets en ordre les 4 étapes/stades conscient/inconscient du processus d’apprentissage?",
+    a: "1) Incompétence inconsciente (« Je ne sais pas que je ne sais pas ») : Avant d'apprendre à conduire, un enfant voit ses parents conduire et pense que c'est tout simple. 2) Incompétence consciente (« Je sais que je ne sais pas ») : Lors de la première leçon de conduite, l'apprenant réalise toute la difficulté et la quantité de choses à gérer (pédales, volant, miroirs, panneaux), ce qui crée de la frustration. 3) Compétence consciente (« Je sais que je sais ») : L'apprenant a obtenu son permis. Il sait conduire, mais chaque geste demande de la concentration (« Réfléchir avant d'embrayer, regarder l'angle mort, mettre le clignotant »). 4)Compétence inconsciente (« Je ne sais plus que je sais ») : Après 5 ans de conduite quotidienne, la personne arrive chez elle après le travail sans s'être concentrée consciemment sur chaque changement de vitesse ou chaque coup de frein. La compétence est totalement intégrée."
+  },
+  {
+    q: "qu’est-ce qui est important de retenir de la compétence consciente ‘’je sais que je sais‘’ qui est la 3e étape des stades conscients inconscients de l’apprentissage?",
+    a: "C’est l’étape la plus longue à ce stade l’apprenant peut être confronté à la difficulté de changer ses anciennes façons de faire habitudes et comportements il a besoin d’entraînements soutenus et d’un suivi prolongé pour qu’il parvienne à réussite"
+  },
+  {
+    q: "qu’est-ce qui est important de retenir de la compétence inconsciente ‘’ je ne sais plus que je sais’’ qui est la 4e étape des stades conscient inconscient de l’apprentissage?",
+    a: "c'est la meilleure dernière étape du processus qui prouve à l'apprenant qu'il a bien acquis le knowledge; La personne n’a plus conscience des procédures qu’elle faisait auparavant par exemple conduire l’effet du surapprentissage facilite donc l’intégration des automatismes liés au point qu’il devient difficile de se les remémorer et de les verbaliser l’apprenant parvient à se 4e stade par expérience et le temps"
+  },
+  {
+    q: "Qu’est-ce que la notion d’apprentissage pour un adulte?",
+    a: "processus par lequel se fait l’acquisition de nouvelles connaissances, de nouvelles habiletés et de nouvelles attitudes, qui entraînera un changement de comportement. Pour l’adulte, l’apprentissage doit tenir compte de facteurs psychologiques, physiologiques, sociaux, et des habitudes de travail. L’apprentissage chez un adulte sera davantage volontaire, il sera associé à sa motivation et à la perception de l’utilité des nouvelles connaissances pour son travail."
+  },
+  {
+    q: "Vrai ou faux; dans le modèle de l’apprentissage social, le principe de l’autorégulation influencera la façon dont un apprenant prendra une décision?",
+    a: "Vrai. Le principe de l’autorégulation veut qu’un individu puisse gérer et contrôler par lui-même ses propres comportements, afin qu’il puisse se fixer et atteindre des objectifs personnels d’apprentissage."
+  },
+  {
+    q: "pourquoi la motivation est un enjeu essentiel à l’apprentissage chez l’adulte?",
+    a: "on discute du processus motivationnel. On peut retenir qu’un adulte motivé sera davantage enclin à s’investir, à modifier ses comportements et à acquérir de nouvelles connaissances qu’un adulte qui n’est pas motivé. La motivation repose sur un désir réel d’enrichir ses connaissances ou encore de trouver une solution à un problème concret. Un apprenant adulte doit avoir le sentiment d’acquérir des compétences et des connaissances utiles. Le temps qu’il consacre à l’acquisition de nouveaux savoirs, savoir-faire ou savoir-être ne doit pas être perçu comme du temps perdu au détriment d’autres activités"
+  },
+  {
+    q: "pourquoi le modèle expérientiel s’apparente à un processus de résolution de problème?",
+    a: "puisqu’il est basé sur plusieurs étapes où l’on s’interroge sur la situation, les réactions, la signification du problème, où l’on cherche à comprendre les facteurs influençant la situation et à prendre une décision. Il y a des étapes d’observation réflexive, de conceptualisation et d’abstraction présentes dans un processus de résolution de problème"
+  },
+  {
+    q: "Énumérez et expliquez en donnant un exemple, les six principes qui constituent les fondements de la théorie moderne de l’apprentissage chez l’adulte?",
+    a: "l’autodéterminisme, la motivation, le pragmatisme, l’expérience, la collaboration et la diversité"
+  },
+  {
+    q: "En considérant les conditions d’apprentissage chez un adulte, que pouvez-vous mettre en place au sein d’une organisation, à titre de personne responsable du développement des compétences, pour que les employés apprennent dans un climat favorable à la participation?",
+    a: "Un adulte apprend s’il évolue dans un climat favorisant la participation, on doit s’assurer à titre de personne responsable du développement des compétences, que le formateur retenu ait les compétences adéquates pour faciliter un bon climat d’apprentissage ‒ notamment en favorisant l’écoute active et le respect du droit de parole ‒, et qu’il soit ouvert aux nouvelles idées et aux points de vue divergents pendant la formation. Ces considérations permettront à un apprenant d’évoluer dans un climat positif favorisant l’échange d’idées de même que sa participation"
+  },
+  {
+    q: "vrai ou faux; tous les éléments suivants favorisent l'obsolescence des compétences (Une forte culture d'apprentissage, L'évolution technologique rapide, La négligence et les déficiences, et La perte ou le vol de connaissances)?",
+    a: "Faux, car une forte culture d'apprentissage ne favorise PAS l’obsolescence des compétences, mais l’évolution technologique rapide, la négligence et les déficiences oui."
+  },
+  {
+    q: "À quel stade de maturité la formation fait-elle partie intégrante de la culture (learning organization)?",
+    a: "Fonction intégrée (stade 4)"
+  },
+  {
+    q: "Quelle caractéristique correspond à une fonction structurée?",
+    a: "Liens clairs et directs avec les operations"
+  },
+  {
+    q: "vrai ou faux; l’Intégration de la fonction formation au niveau de la culture, les liens clairs et directs avec les opérations, perçue comme nécessaire à la mobilité des employés, et l’offre variée et levier stratégique sont des caractéristiques correspondent à une fonction structurée?",
+    a: "Faux il y a juste les liens clairs et directs avec les opérations qui correspondent à une fonction structurée"
+  },
+  {
+    q: "Laquelle n'est PAS un élément de l'approche par compétences parmi Bilan de compétences, Description de poste détaillée uniquement, Profil de compétences, et Moyens de formation?",
+    a: "Description de poste détaillée uniquement"
+  },
+  {
+    q: "Le formateur (facilitateur) est généralement lequel entre les 4 énoncés suivants; Le gestionnaire de la stratégie de formation, Un expert de contenu qui ne relève pas toujours du service de formation, Le designer des politiques RH, ou Le responsable des registres obligatoires?",
+    a: "Le formateur (Facilitateur) est un expert de contenu qui ne relève pas toujours du service de formation"
+  },
+  {
+    q: "Quelle est la bonne séquence du cycle expérientiel?",
+    a: "Expérience concrète → Observation réflexive → Conceptualisation abstraite → Expérimentation active"
+  },
+  {
+    q: "Dans quelle phase pose-t-on surtout la question « Comment puis-je appliquer la solution?",
+    a: "Phase d’expérimentation active, ce n’est PAS Observation reflexive, ni  Expérience concrète, ni non plus Conceptualisation abstraite"
+  },
+  {
+    q: "Dans l'apprentissage organisationnel et collaboratif, la perspective du traitement de l'information met l'accent sur quoi?",
+    a: "L’acquisition, diffusion, modélisation et exploitation des connaissances, ce n’est PAS ni Sur l'individu comme socle de connaissances, ni Transfert des connaissances uniquement, ni Traduction de connaissances tacites en connaissances explicites"
+  },
+  {
+    q: "Pathologie formative?",
+    a: "Logique d'action qui caractérise (a un degré variable) les mauvais unvestissements en formation."
+  },
+  {
+    q: "Quelles sont les six logiques formatives pouvant mener à des formations inefficaces?",
+    a: "1) La logique de la récompense (formation bonbon) 2) La logique du catalogue (formation avantage-acquis) 3) La logique du saupoudrage (formation égalitariste) 4) La logique de l’urgence (formation panique) 5) La logique du miracle (formation solution magique) 6) La logique de la vertu (formation qui n’a jamais fait de mal à personne)."
+  },
+  {
+    q: "En quoi consiste la logique de la récompense, appelée formation bonbon?",
+    a: "Offrir une formation à un employé comme récompense à la suite d’une évaluation du rendement positive, même si aucune lacune ne justifie cette formation."
+  },
+  {
+    q: "En quoi consiste la logique du catalogue, appelée formation avantage-acquis?",
+    a: "Accorder à chaque employé un nombre prédéterminé d’heures de formation auxquelles il a droit et lui permettre de choisir les formations qui l’intéressent, sans nécessairement tenir compte des besoins de l’organisation."
+  },
+  {
+    q: "En quoi consiste la logique du saupoudrage, appelée formation égalitariste?",
+    a: "Répondre à toutes les demandes de formation sans prioriser les besoins de l’organisation. Le budget est divisé en parts égales entre les différentes unités ou directions, ce qui produit rarement des effets positifs pour l’organisation."
+  },
+  {
+    q: "En quoi consiste la logique de l’urgence, appelée formation panique?",
+    a: "Mettre rapidement sur pied des formations pour remédier à une situation de crise ou répondre à des exigences externes, sans nécessairement répondre aux besoins réels ni assurer le transfert des apprentissages."
+  },
+  {
+    q: "En quoi consiste la logique du miracle, appelée formation solution magique?",
+    a: "Croire que la formation peut résoudre à elle seule un problème, sans chercher à comprendre ses causes réelles. Les facteurs précis à l’origine du problème sont alors négligés."
+  },
+  {
+    q: "En quoi consiste la logique de la vertu, appelée formation qui n’a jamais fait de mal à personne?",
+    a: "Offrir des formations en considérant qu’elles sont nécessairement bénéfiques pour les employés et qu’elles ne peuvent pas nuire, sans se préoccuper réellement de leur efficacité. Cette logique permet aussi à l’organisation de respecter son obligation annuelle de développer les compétences de sa main-d’œuvre."
+  },
+  {
+    q: "Quelle est la différence entre la logique de la récompense et la logique du catalogue?",
+    a: "La récompense consiste à offrir une formation comme cadeau après une bonne évaluation du rendement, tandis que le catalogue consiste à accorder un nombre prédéterminé d’heures de formation que l’employé peut utiliser pour choisir les cours qui l’intéressent."
+  },
+  {
+    q: "Quelle est la différence entre la logique du catalogue et la logique du saupoudrage?",
+    a: "Le catalogue permet à chaque employé de choisir des formations selon un quota d’heures, tandis que le saupoudrage consiste à répartir le budget de formation également entre les unités ou directions, sans prioriser les besoins organisationnels."
+  },
+  {
+    q: "Quelle est la différence entre la logique de l’urgence et la logique du miracle?",
+    a: "L’urgence consiste à organiser rapidement une formation pour répondre à une crise, tandis que le miracle consiste à croire qu’une formation peut résoudre un problème sans en analyser les causes profondes."
+  },
+  {
+    q: "Quelle est la différence entre la logique du miracle et la logique de la vertu?",
+    a: "Le miracle attribue à la formation un pouvoir de résolution des problèmes qu’elle ne possède pas nécessairement, tandis que la vertu considère toute formation comme bénéfique, même sans vérifier son efficacité."
+  },
+  {
+    q: "Quel est le problème commun aux six logiques formatives?",
+    a: "Elles peuvent conduire à des décisions de formation qui ne reposent pas sur une analyse rigoureuse des besoins réels et des priorités de l’organisation."
+  },
+  {
+    q: "Quelles sont les quatre grandes catégories de besoins de formation?",
+    a: "1) Les besoins organisationnels 2) Les besoins transversaux 3) Les besoins des unités ou des secteurs 4) Les besoins individuels."
+  },
+  {
+    q: "Pourquoi la formation doit-elle être envisagée dans une perspective stratégique?",
+    a: "Pour qu’elle puisse servir de levier à l’atteinte des objectifs organisationnels."
+  },
+  {
+    q: "Quelle démarche les organisations performantes adoptent-elles pour identifier et analyser leurs besoins de formation?",
+    a: "Elles adoptent une démarche proactive et systématisée d’identification et d’analyse des besoins de formation."
+  },
+  {
+    q: "Quel est le principal objectif d’une démarche proactive et systématisée d’identification et d’analyse des besoins de formation?",
+    a: "Faciliter une bonne planification de l’utilisation des ressources de l’organisation, tant sur le plan budgétaire qu’au niveau des effectifs et des ressources humaines."
+  },
+  {
+    q: "Quelles sont les trois grandes étapes du processus d’identification des besoins de formation?",
+    a: "1) Déterminer l’étendue de l’exercice souhaité 2) Recenser les besoins tout en effectuant une analyse préliminaire des besoins identifiés 3) Établir les priorités de formation."
+  },
+  {
+    q: "En quoi consiste la deuxième étape du processus d’identification des besoins de formation?",
+    a: "Elle consiste à recenser les besoins tout en effectuant une analyse préliminaire des besoins identifiés."
+  },
+  {
+    q: "Quel est le lien entre la formation et les objectifs organisationnels?",
+    a: "La formation doit être envisagée comme un levier stratégique permettant de contribuer à l’atteinte des objectifs organisationnels."
+  },
+  {
+    q: "Quelles sont les trois grandes étapes du processus d’identification des besoins de formation?",
+    a: "1) Déterminer l’étendue de l’exercice 2) Recenser les besoins de formation 3) Établir les priorités de formation."
+  },
+  {
+    q: "Quelles sont les deux actions à réaliser lors de la première étape, soit déterminer l’étendue de l’exercice?",
+    a: "1) Identifier le ou les niveaux de l’exercice (organisation, postes, personnes) 2) Déterminer les personnes à consulter et les méthodes de collecte d’information."
+  },
+  {
+    q: "Quels sont les trois niveaux possibles pour déterminer l’étendue de l’exercice?",
+    a: "1) L’organisation 2) Les postes 3) Les personnes."
+  },
+  {
+    q: "Quelles sont les deux actions à réaliser lors de la deuxième étape, soit recenser les besoins de formation?",
+    a: "1) Effectuer une analyse préliminaire des besoins exprimés 2) Organiser les besoins recensés dans une grille."
+  },
+  {
+    q: "Quelles sont les deux actions à réaliser lors de la troisième étape, soit établir les priorités de formation?",
+    a: "1) Positionner les besoins selon deux axes 2) Élaborer le plan global de formation."
+  },
+  {
+    q: "Quels sont les trois niveaux d’analyse possibles pour déterminer l’étendue d’un exercice d’identification des besoins de formation?",
+    a: "1) Le niveau de l’organisation 2) Le niveau des postes 3) Le niveau des personnes."
+  },
+  {
+    q: "En quoi consiste la détermination de l’étendue de l’exercice d’identification des besoins de formation?",
+    a: "Elle consiste à déterminer à quel niveau l’analyse sera réalisée : celui de l’organisation, des postes ou des personnes."
+  },
+  {
+    q: "synonyme de plan global de formation?",
+    a: "plan de développement des ressources humaines"
+  },
+  {
+    q: "Qu’est-ce qu’en résulte le synonyme de plan global de formation (plan de développement des ressources humaines)?",
+    a: ", le résultat d'un processus d'identification des besoins de formation au niveau organisationnel cherche à recenser les écarts existants entre les objectifs de l'organisation et son capital compétence. Pouvant être intégré à une démarche de gestion prévisionnelle des ressources humaines ou de planification stratégique, le processus d'identification à ce niveau permet généralement de mettre en lumière les défis et les enjeux auxquels fait ou fera prochainement face l'organisation. Ce processus permet aussi de définir les résultats attendus à l'échelle organisationnelle, tout en permettant de préciser les compétences à mobiliser ou celles à développer pour les atteindre"
+  },
+  {
+    q: "Qu’est-ce que l’analyse préliminaire des besoins de formation?",
+    a: "C’est un examen sommaire qui vise à déterminer si la formation constitue un moyen valable pour répondre aux besoins identifiés et corriger la situation observée."
+  },
+  {
+    q: "Pourquoi est-il pertinent d’effectuer une analyse préliminaire des besoins lors du processus de recension?",
+    a: "Pour éviter de se retrouver avec une liste trop longue de besoins de formation en éliminant ceux pour lesquels la formation ne constitue pas une solution valable."
+  },
+  {
+    q: "Quel est le principal objectif de l’analyse préliminaire des besoins?",
+    a: "Déterminer si la formation représente un moyen approprié pour corriger la situation observée."
+  },
+  {
+    q: "quels sont les 2 axes compris dans la grille établi pour l’ordre de priorité des besoins de formation?",
+    a: "Un premier axe vertical définit la valeur stratégique représente le fait de combler le besoin identifié comme par exemple quels sont les bénéfices quantitatifs et qualitatifs prévus pour l’organisation , et un 2nd axe horizontal porte sur le degré de vulnérabilité opérationnel que s’expose l’organisation si elle continue d’ignorer les effets nuisible"
+  },
+  {
+    q: "quel ce plan peut servir à préparer l'exercice budgétaire annuel de l'entreprise, à planifier les investissements en formation liés à un démarrage d'usine ou encore à déterminer les coûts pour la mise en place d'un programme de formation pour un type de postes bien particuliers?",
+    a: "d'établir un plan global de formation, lequel recense et ordonnance les initiatives de formation prioritaires à déployer au cours d'une période donnée. Ce plan documente aussi le budget, ainsi que les ressources qui devront être consenties."
+  },
+  {
+    q: "Quelles sont les trois grandes étapes du processus d’analyse des besoins de formation?",
+    a: "1) Préciser les écarts de rendement 2) Déterminer les causes potentielles 3) Dresser les conclusions de l’analyse des besoins."
+  },
+  {
+    q: "Quelles sont les trois actions à réaliser pour préciser les écarts de rendement?",
+    a: "1) Localiser le problème 2) Comparer les niveaux de rendement observé et attendu 3) Déterminer l’ampleur du problème."
+  },
+  {
+    q: "Que signifie localiser le problème dans le processus d’analyse des besoins?",
+    a: "Il s’agit de déterminer où se situe le problème de rendement."
+  },
+  {
+    q: "Pourquoi faut-il comparer les niveaux de rendement observé et attendu?",
+    a: "Pour identifier l’écart entre la performance actuelle et celle qui est souhaitée ou attendue."
+  },
+  {
+    q: "Selon les auteurs, comment les organisations peuvent-elles maximiser les retombées de leurs investissements en formation et pourquoi l’analyse des besoins devrait-elle être un processus récurrent?",
+    a: "En identifiant pourquoi la formation est nécessaire, en déterminant les contenus à aborder selon les besoins identifiés et en ciblant adéquatement le public à former. Comme les organisations font face à des changements rapides, l’analyse des besoins doit être actualisée régulièrement."
+  },
+  {
+    q: "Quelles sont les quatre familles de méthodes utilisées pour collecter les données nécessaires à l’analyse des besoins de formation?",
+    a: "1) Les méthodes individuelles 2) Les méthodes groupales 3) Les méthodes d’observation 4) La quatrième catégorie n’est pas précisée dans l’extrait fourni."
+  },
+  {
+    q: "Qu’est-ce que les méthodes groupales?",
+    a: "Méthode documentaire de collecte de données qui permettent en relation plusieurs personnes et tirent profit des échanges et des interactions entre les membres d'un même groupe, et ce, afin de recueillir les données recherchées dans le cadre de l'analyse des besoins. À cet égard, nous examinerons deux méthodes recon-nues pour le développement des ressources humaines, à savoir le comité de formation et le groupe de discussion"
+  },
+  {
+    q: "Qu’est-ce que les méthodes individuelles?",
+    a: "Méthode documentaire de collecte de données qui font généralement appel aux personnes qui sont susceptibles de participer à la formation ou à celles avec qui elles ont un contact régulier (p. ex. supérieurs immédiats, subordonnés, clients, fournisseurs, etc.). Parmi les techniques de collecte de données les plus couramment utilisées, on retrouve l'entrevue, le questionnaire et l'analyse des compé tences. Par définition, chacune de ces techniques permet une recension individualisée des besoins de formation."
+  },
+  {
+    q: "l’entrevue le questionnaire et l’analyse des compétences font partie de quelles méthodes de collecte de données?",
+    a: "Les méthodes individuelles"
+  },
+  {
+    q: "qu’est-ce que les méthodes d’observation?",
+    a: "Méthode documentaire de collecte de données qui concerne les méthodes dites d'observation. Si utilisées de façon systématique, ces méthodes peuvent prendre deux formes distinctes, à savoir : l'observation participante et l'observation méthodique."
+  },
+  {
+    q: "synonyme des méthodes documentaires?",
+    a: "Méthode d’analyse des données existantes, ou basée sur les données existantes"
+  },
+  {
+    q: "Qu’est-ce que les méthodes d'analyse des données existantes?",
+    a: "Méthode documentaire de collecte de données, les organisations cumulent chaque année un nombre impressionnant de don-nées, lesquelles se retrouvent dans des documents officiels ou font l'objet de rapports variés. En soi, ces documents peuvent constituer autant de sources d'informations utiles au processus menant à l'identification et à l'analyse des besoins. Les descriptions de poste, les rapports d'évaluation du rendement ou d'autres documents traitant de la productivité générale de l'organisation sont donc des exemples relevant des méthodes documentaires."
+  },
+  {
+    q: "Les descriptions de poste, les rapports d'évaluation du rendement ou d'autres documents traitant de la productivité générale de l'organisation sont des exemples relevant de quelle méthode?",
+    a: "méthodes documentaires/ méthode d’analyse des données"
+  },
+  {
+    q: "facteurs qui peuvent influencer le choix du nombre d’options de réponses à privilégier?",
+    a: "sont la nature parfois sensible de certains sujets ou questions les biais psychologiques qui peuvent habiter le répondant au moment de remplir le questionnaire comme par exemple désirabilité sociale protection de soi ou encore les limitations qui peuvent induire certaines échelles sur le plan statistique comme par exemple les restrictions de la variance fiabilité et cetera oui également savoir que il semble que le recours à des échelles de mesures comprenant un plus grand nombre d’options comme par exemple 10 choix de réponses ça peut être un plus grand avantage"
+  },
+  {
+    q: "Quel est l’avantage des échelles de mesure comprenant un plus grand nombre de questions?",
+    a: "d’une part c’est ces échelles permettent aux répondants de nuancer leur réponse à chacune des questions sans que ce soit perçu comme une menace pour leur ego et Deuxièmement d’autre part l’usage de ces échelles peut sous certaines conditions améliorer leur qualité psychométriques"
+  },
+  {
+    q: ", un questionnaire standardisé permet quoi et quel est son utilité?",
+    a: "de recueillir des informations qui peuvent servir, par la suite, à comparer différents postes ou services, ainsi qu'à mettre en corrélation différents éléments (voire variables). Son utilité réside surtout dans la possibilité qu'il offre de sonder un grand nombre de personnes dans un délai relativement court."
+  },
+  {
+    q: "quels sont les 3 méthodes documentaires pour la collecte de données?",
+    a: "(a) les méthodes individuelles, (b) les méthodes groupales, (c) les méthodes d'observation et (d) les méthodes documentaires (ou basées sur les données existantes)."
+  },
+  {
+    q: "L'entrevue peut être de 2 natures, lesquelles?",
+    a: "structurée ou non structurée."
+  },
+  {
+    q: "Qu’est-ce qu’Une entrevue structure?",
+    a: "comporte des objectifs précis et s'orchestre généralement selon une structure et un ordonnancement bien précis des sujets ou questions. Elle s'appuie donc sur un cadre (voire canevas) qui permet de structurer les échanges en fonction de questions pré-cises."
+  },
+  {
+    q: "Qu’est-ce que l'entrevue dite non structure?",
+    a: "celle-ci comprend aussi des objectifs, mais la personne responsable de conduire celle-ci opère dans un cadre qui se veut moins rigide et qui laisse plus de place à la discussion, ainsi qu'à l'ajout de thèmes nouveaux non présumés au départ."
+  },
+  {
+    q: "questionnaire client vs questionnaire d’auto-évaluation versus questionnaire au test de competence?",
+    a: "Le questionnaire client sert à identifier la personne qui fournit le service et c’est rempli par le client tandis que le questionnaire d’auto-évaluation s’est rempli par la personne à former et enfin le test de competence c’est un test d’analyse des besoins, à prendre note qui peut également y avoir des questionnaires devaluation dit multi-source"
+  },
+  {
+    q: "quelle questionnaire permet d’accroître la validité des données recueillies et de procéder à l’avantage de favoriser la participation d’un grand nombre d’acteurs pouvant faciliter chez les personnes concernées par l’effort de formation un engagement plus actif sur la voie du perfectionnement et permet aux personnes visées par la formation d’entrée dans la 2e phase de cycle d’apprentissage je sais que je ne sais pas?",
+    a: "le questionnaire d’évaluation dit multi-source"
+  },
+  {
+    q: "outils d'évaluation qui permettent de juger de la capacité d'une personne à réaliser diverses táches ou fonctions qui lui seront ansignées. Ce type d'outils peut consister notamment en un examen formel permettant de vérifier la maitrise de certaines connaissances, en une observation de la mise en application adéquate de certaines compétences, en différentes mises en situation pour vérifier les aptitudes à prendre de bonnes décisions dans un contexte particulier ou en une combinaison de ces différents moyens?",
+    a: "Les tests de compétences"
+  },
+  {
+    q: "Quels outils peuvent être utilisés pour évaluer le potentiel d’un candidat à un poste de gestion et quel est le contenu du rapport d’évaluation qui en résulte?",
+    a: "L’évaluation peut comprendre des entretiens individuels, des tests psychométriques et des mises en situation de gestion (panier de gestion). Elle est généralement basée sur un profil de compétences adapté au niveau hiérarchique et au rôle attendu. Le rapport présente un bilan des compétences maîtrisées et de celles pouvant faire l’objet d’un plan de développement."
+  },
+  {
+    q: "qui suis-je, Cette technique est utile pour cerner des problématiques bien précises et pour y apporter les correctifs appropriés. Par exemple, différents tests peuvent étre réalisés pour analyser les causes d'un écart de rendement chez un employé, et ce, afin de comprendre les raisons d'une utilisation sous-optimale d'un logiciel ou d'un équipement particulier?",
+    a: "Test de compétences"
+  },
+  {
+    q: "Le test *\\_\\_\\_x\\_\\_ *permet de brosser un portrait assez juste de l'écan de rendement en situant clairement le niveau auquel une personne maitrise les compétences associées à un poste. Les résultats obtenus sont individualisés e précisent généralement les besoins de formation requis pour chacune des personnes évaluées. Ils peuvent notamment aider le gestionnaire à dresser le plan individuel de formation et/ou le développement de carrière pour un employé?",
+    a: "Test de compétences"
+  },
+  {
+    q: "quelles sont els limites du test de compétences?",
+    a: "Les limites du test de compétences résident principalement dans son coût (sou-vent) élevé. Comme il s'agit d'une technique rigoureuse et spécialisée nécessitant le recours à une expertise externe, les coûts d'utilisation s'additionnent rapidement lorsqu'il faut évaluer un grand nombre d'individus. Par ailleurs, son caractère évaluatif peut susciter parfois de la résistance chez certaines personnes. Favorisant peu l'implication, ces tests peuvent aussi soulever des réactions de contestation ou de dénégation. Pour limiter l'apparition de résistances, il est important d'obtenir laccord des personnes visées au préalable et de rassurer ces dernières en expliquant les résultats au test serviront à l'évaluation des besoins de formation seulement."
+  },
+  {
+    q: "donne des exemples de comité de formation temporaire?",
+    a: "introduction d'un changement technologique, acquisition d'une nouvelle entreprise, restructuration organisationnelle"
+  },
+  {
+    q: "qu’est-ce qu’un comité de formation?",
+    a: "ça représente le groupe tout désigné pour assurer la conduit de l’analyse de besoins de formation au sein de l’organisation il peut être formel et permanent ou temporaire"
+  },
+  {
+    q: "qui suis-je en plus des specialists en développement des ressources humaines cette CIP de comites et généralement compose de personnes directement concernées par la problématique étudiée ou ayant une expertise relié à celle-ci?",
+    a: "Comité de formation"
+  },
+  {
+    q: "vrai ou faux?",
+    a: "la loi exige que lorsqu'un employeur souhaite comptabiliser des dépenses liées à des formations qui ne sont pas offertes par un formateur agréé, un établissement d'enseignement reconnu ou un ordre professionnel, il doit s'assurer que ces activités soient offertes en respect d'un plan de formation établi après avoir consulté le comité de formation désigné au sein de l'organisation? Vrai La loi favorisant le développement et la reconnaissance des competences de la main d’oeure l’exige"
+  },
+  {
+    q: "le rôle du comité est-il substantiel ou consultatif?",
+    a: "Consultatif"
+  },
+  {
+    q: "vrai ou faux; la marge de manceuvre réelle du comité de formation se voit intimement Née à celle que la direction de Torganisation est préte à lui consentir Considérant son statut consultatif, on retiendra que ce type de comité détient généralement peu de pouvoir décisionne et que son mandat s'inscrit principalement dans un esprit de recommander à la direction des actions liées à la bonne gestion de la formation?",
+    a: "Vrai"
+  },
+  {
+    q: "Quels sont les quatre facteurs qui déterminent la réussite d’un groupe de discussion?",
+    a: "1) La sélection et le recrutement adéquats des participants 2) La structure et la pertinence du canevas d’entrevue 3) La qualité de l’animation du groupe 4) La compilation et l’analyse des résultats."
+  },
+  {
+    q: "Quelles caractéristiques doit respecter la sélection des participants d’un groupe de discussion?",
+    a: "L’échantillon doit être représentatif de l’hétérogénéité de la population visée par la formation. Il faut constituer autant de groupes que nécessaire pour respecter cette diversité, tout en maintenant une composition relativement homogène à l’intérieur de chaque groupe afin d’éviter les opinions trop divergentes et l’autocensure."
+  },
+  {
+    q: "Pourquoi est-il important de maintenir une composition relativement homogène à l’intérieur de chaque groupe de discussion?",
+    a: "Pour éviter les opinions trop divergentes et l’autocensure qui pourrait être pratiquée par certains sous-groupes."
+  },
+  {
+    q: "Quel est le rôle du canevas d’entrevue dans un groupe de discussion et quelles caractéristiques doit-il posséder?",
+    a: "Il constitue le guide de l’animateur. Il doit présenter le contexte, les objectifs et les principes à respecter, couvrir les thèmes de l’étude selon une progression logique et contenir des questions ouvertes, claires et formulées dans un langage simple."
+  },
+  {
+    q: "Quel est le rôle de l’animateur dans un groupe de discussion?",
+    a: "Il doit orienter les échanges vers les thèmes du canevas, gérer la dynamique et le climat du groupe, susciter la participation et approfondir certaines interventions afin de faire ressortir un maximum d’opinions et d’expériences différentes."
+  },
+  {
+    q: "Pourquoi l’animateur d’un groupe de discussion doit-il être perçu comme impartial et quelle personne est-il préférable de choisir?",
+    a: "Pour favoriser des échanges ouverts et impartiaux. Il est préférable de faire appel à une personne externe."
+  },
+  {
+    q: "Comment doit-on compiler et analyser les résultats d’un groupe de discussion?",
+    a: "Les résultats doivent être regroupés selon les thèmes de l’étude. Si le nombre de groupes le permet, il faut calculer la fréquence d’apparition des énoncés afin de faciliter la hiérarchisation des thèmes et des sous-thèmes."
+  },
+  {
+    q: "quelles sont les 2 méthodes dites d'observation?",
+    a: "Si utilisées de façon systématique, ces méthodes peuvent prendre deux formes distinctes, à savoir : l'observation participante et l'observation méthodique."
+  },
+  {
+    q: "Qu’est-ce qaue l’observation participante?",
+    a: "consiste à intégrer un observateur dans le groupe cible, et ce, afin de permettre à ce dernier de participer activement au travail quotidien accompli par le groupe. Cette insertion peut être officielle ou clandestine, c'est-à-dire que les personnes observées peuvent en être conscientes ou ne pas avoir été mises au courant de la présence de l'observateur. L'observation clandestine peut toutefois soulever certains problèmes d'ordre éthique, ou encore rendre difficile l'enregistrement des données."
+  },
+  {
+    q: "Effet Hawthorne signifi quoi?",
+    a: "Effet seion lequei les résultats d'une observation sont dus (en partie) au fait que les participants sont conscients d'être observés."
+  },
+  {
+    q: "observation participante VS observation méthodique?",
+    a: "Participante = participer : l'observateur entre dans le quotidien des employés pour comprendre leur travail de l'intérieur. Méthodique = mesurer : l'observateur utilise une grille et recueille systématiquement des données sans devoir intégrer le groupe."
+  },
+  {
+    q: "Donne des exemples relevant des méthodes documentaires?",
+    a: "les descriptions de poste, les rapports d'évaluation du rendement ou d'autres documents traitant de la productivité générale de l'organisation sont donc des exemples"
+  },
+  {
+    q: "Par rapport à l’analyse des besoins, les compétences pour un poste peuvent généralement englober 3 choses, lesquels?",
+    a: "les qualifications requises, les principales tâches et le niveau de responsabilité."
+  },
+  {
+    q: "Nomme 2 points négatifs (limites) des descriptions de postes?",
+    a: "Un problème courant avec les descriptions de poste est qu'elles ne sont pas toujours mises à jour. L'évolution des exigences et de l'organisation du travail a souvent pour effet de rendre obsolète une partie des informations contenues dans ces documents. En outre, alors que ces outils sont très utiles pour identifier les besoins de formation existant au niveau des postes ou des individus, ils sont moins utiles pour identifier les besoins organisationnels ou émergents."
+  },
+  {
+    q: "L'évaluation du rendement comprend essentiellement deux volets, lesquels?",
+    a: "(a) une évaluation que réalise le supérieur immédiat du rendement de l'un de ses employés en fonction d'une période donnée (généralement la dernière année) et (b) la mise en relief (voire comparaison) du rendement offert par un employé par rapport à ce qui est attendu de lui."
+  },
+  {
+    q: "Les rapports de productivité sont particulièrement utiles pour quoi?",
+    a: "cerner des écarts de rendement observés et pour définir des niveaux de rendement attendus. Ils peuvent donc servir de source d'information avant l'utilisation d'autres méthodes de collecte de données. Ils peuvent également être utiles pour d'autres étapes du processus de formation, telles que la formulation des objectifs d'apprentissage ou l'évaluation de la formation. Le principal défi dans l'utilisation de rapports de productivité réside dans leur interprétation."
+  },
+  {
+    q: "quelles sont les 3 grandes étapes du processus de design d’une activité de formation?",
+    a: "(a) les éléments constitutifs du design d'une activité de formation, (b) les choix se rapportant à cette étape du processus et (c) l'élaboration du plan spécifique de formation."
+  },
+  {
+    q: "Quels sont les éléments constitutifs du design de la formation?",
+    a: "Le design de la formation vise à répondre à une série de questions qui délimitent les contours de l’activité de formation à développer. Il comprend trois catégories : 1) l’intrigue, 2) les acteurs et 3) le synopsis."
+  },
+  {
+    q: "Système client definition?",
+    a: "Unité de l'organisation (équipe. service, division ou direction), ou organisation entière, qui est visée par linitiative de formation."
+  },
+  {
+    q: "Quels sont les trois types de coûts à distinguer concernant le choix du médium de formation?",
+    a: "Par ailleurs, le choix du ou des médiums pour la formation peut avoir des considérations budgétaires importantes. À cet égard, il est important de distinguer trois types de coûts: (a) les coûts de développement, (b) les coûts de déploiement et (c) les coûts de renonciation (ou coûts d’opportunités)."
+  },
+  {
+    q: "Coûts de développement inclut quoi?",
+    a: "Ce type de coûts inclut toutes les dépenses reliées aux activités de conception de la formation (p. ex. temps des ressources internes impliquées, frais d'acquisition de contenu de cours, frais de service-conseil, frais de médiatisation, etc.). Les activités de formation en mode asynchrone ont généralement des coûts de développement plus élevés que celles en mode synchrone, considérant qu'elles nécessitent d'effectuer de la captation de connaissances."
+  },
+  {
+    q: "Coûts de déploiement inclut quoi?",
+    a: "Ce type de coûts concerne toutes les dépenses reliées aux activités de diffusion de la formation (p. ex. temps des apprenants en formation, frais logistiques, frais reliés au formateur, frais de déplacement ou d'hébergement, etc.). Les activités en mode synchrone ont des coûts de déploiement (contrairement aux coûts de développement) souvent plus élevés que les activités en mode asynchrone."
+  },
+  {
+    q: "Coûts de renonciation inclut quoi?",
+    a: "Ce type de coûts renvoie aux pertes pouvant être associées au fait de ne pas offrir la formation. En effet, l'écart de rendement observé lors de l'analyse de besoins entraîne habituellement des conséquences négatives sur l'efficacité de l'organisation (p. ex. erreurs de production, gas-pillages, services offerts sous les standards de qualité, baisse de clientèle, etc.)."
+  },
+  {
+    q: "Parcours de formation definition?",
+    a: "Programme de formation composé d'une série d'activités d'apprentissage pouvant être réalisées séquentiellement à différents moments, et ce, en mode synchrone ou asynchrone"
+  },
+  {
+    q: "Quelles sont les six catégories de contraintes à considérer pour déterminer les formats pédagogiques à privilégier?",
+    a: "Les six catégories sont : 1) technologiques, 2) spatiales, 3) fonctionnelles, 4) temporelles, 5) humaines et 6) financières."
+  },
+  {
+    q: "Quelles contraintes peuvent être de nature technologique?",
+    a: "L’indisponibilité des technologies d’apprentissage et l’inconfort ou l’inaptitude des apprenants à utiliser les technologies d’apprentissage requises."
+  },
+  {
+    q: "Quels formats pédagogiques peuvent être privilégiés en présence de contraintes technologiques?",
+    a: "L’entraînement à la tâche structuré, la formation en salle de classe, le groupe de codéveloppement et le guide d’autoformation. Ces formats sont regroupés sous les formats traditionnels."
+  },
+  {
+    q: "Quelles contraintes peuvent être de nature spatiale?",
+    a: "La dispersion des apprenants sur plusieurs sites de travail différents et les contraintes liées au déplacement de la ressource enseignante."
+  },
+  {
+    q: "Quels formats pédagogiques peuvent être privilégiés en présence de contraintes spatiales?",
+    a: "La classe virtuelle, la formation en ligne (e-learning), le guide d’autoformation et l’aide à la tâche (sur une application mobile). Ces formats constituent des options autonomes ou à distance."
+  },
+  {
+    q: "Quelles contraintes peuvent être de nature fonctionnelle?",
+    a: "Le besoin d’utiliser de l’équipement spécialisé pour la formation et la nécessité de comprendre le contexte de travail pour acquérir les compétences."
+  },
+  {
+    q: "Quels formats pédagogiques peuvent être privilégiés en présence de contraintes fonctionnelles?",
+    a: "L’entraînement à la tâche structuré, l’aide à la tâche, la simulation informatique et la capsule vidéo. Ces formats permettent une formation en cours d’emploi."
+  },
+  {
+    q: "Quelle contrainte peut être de nature temporelle?",
+    a: "Des délais très courts exigés pour déployer la formation."
+  },
+  {
+    q: "Quels formats pédagogiques peuvent être privilégiés en présence de contraintes temporelles?",
+    a: "La formation en salle de classe, la classe virtuelle, la captation vidéo et une solution déjà disponible auprès d’un fournisseur de services externe. Ces formats sont rapides à déployer."
+  },
+  {
+    q: "Quelle contrainte peut être de nature humaine?",
+    a: "Le manque d’experts internes disponibles ou à l’aise pour agir comme formateurs."
+  },
+  {
+    q: "Quels formats pédagogiques peuvent être privilégiés en présence de contraintes humaines?",
+    a: "La captation vidéo et l’appel à un concepteur pédagogique pour capter les connaissances. Ces formats sont des solutions de captation."
+  },
+  {
+    q: "Quelle contrainte peut être de nature financière?",
+    a: "Des disponibilités budgétaires restreintes."
+  },
+  {
+    q: "Que faut-il faire lorsqu’il existe des contraintes financières pour déterminer les formats pédagogiques?",
+    a: "Une analyse est requise en considérant les trois types de coûts : les coûts de développement, de déploiement et d’opportunités."
+  },
+  {
+    q: "Quelles sont les trois étapes du parcours d’apprentissage présenté dans la figure 5.6?",
+    a: "1) Acquisition des savoirs préalables, 2) apprentissage des compétences requises et 3) application et approfondissement."
+  },
+  {
+    q: "Que comprend l’acquisition des savoirs préalables?",
+    a: "Les règles de santé et de sécurité, les informations générales sur les produits et services ainsi que les macroprocessus."
+  },
+  {
+    q: "Que comprend l’apprentissage des compétences requises?",
+    a: "Les procédures et les tâches, les éléments essentiels à maîtriser ainsi que les applications concrètes."
+  },
+  {
+    q: "Que comprend l’application et l’approfondissement?",
+    a: "Les tâches moins fréquentes, l’intégration plus profonde des éléments essentiels et les changements ou évolutions des systèmes ou des procédures."
+  },
+  {
+    q: "Quelles approches pédagogiques sont privilégiées pour l’acquisition des savoirs préalables et l’apprentissage des compétences requises?",
+    a: "Des approches plus formelles, qui peuvent être à distance et asynchrones ou en présence et synchrones."
+  },
+  {
+    q: "En quoi consistent les approches formelles à distance et asynchrones?",
+    a: "Elles permettent un apprentissage autonome ou semi-autonome à l’aide de capsules d’autoformation, de lectures, de vidéos, etc."
+  },
+  {
+    q: "En quoi consistent les approches formelles en présence et synchrones?",
+    a: "Elles se déroulent en présentiel et en expérimentation, notamment par des démonstrations, des mises en pratique et de la rétroaction."
+  },
+  {
+    q: "Quelles approches pédagogiques sont privilégiées pour l’application et l’approfondissement?",
+    a: "Des approches plus informelles, réalisées en situation de travail."
+  },
+  {
+    q: "Quels exemples illustrent les approches informelles en situation de travail?",
+    a: "L’aide à la tâche, les courtes capsules en ligne, le soutien par des superutilisateurs et les vidéos."
+  },
+  {
+    q: "Qu'est ce qu'un macro processus veut dire dans tout ça?",
+    a: "Dans ton contexte de formation, un macroprocessus désigne une vue d’ensemble des grandes étapes d’un processus de travail, sans entrer immédiatement dans tous les petits détails des tâches."
+  },
+  {
+    q: "vrai ou faux; Compte tenu des coûts (c'est-à-dire humain, matériel et financier) associés au développement d'une formation, il est généralement préférable d'explorer d'abord ce qui existe sur le marché avant d'entreprendre les travaux de conception à l'interne?",
+    a: "Vrai"
+  },
+  {
+    q: "qu’est ce qu’un appel de propositions?",
+    a: "c’est un concours piloté par une organization qui permet de mettre en concurrence plusieurs fournisseurs de services afin de répondre à un besoin spécifique"
+  },
+  {
+    q: "lorsque l’organisation offer pour acquérir la formation de l’externe ce qui peut être souhaitable de faire?",
+    a: "procéder à un appel de propositions aussi appelé appel d’offres"
+  },
+  {
+    q: "qu’est-ce qu’un metteur en scene dans ce cours?",
+    a: "Un autre aspect à considérer dans les décisions du design de la formation concerne le choix de la personne qui en assumera la diffusion, soit le par qui. Cet aspect n'est pas à sous-estimer lorsque la formation est déployée en mode synchrone, puisque cette personne (le metteur en scène) va jouer un rôle déterminant dans l'enseignement (pour le respect du scénario) et possiblement l'animation de la dynamique groupale (pour la direction des acteurs) (8-9). Par conséquent, il est important que la sélection se fasse de manière consciencieuse."
+  },
+  {
+    q: "vrai ou faux; Il est possible que le choix du formateur puisse être fait ultérieurement dans le pro-cessus car lorsque la formation est développée à l'interne par des concepteurs pédagogiques assistés d'experts de contenu, il arrive parfois que le choix du ou des formateurs soit déterminé plus tardivement (c'est-à-dire une fois que les contenus de la formation sont déjà bien développés)?",
+    a: "Vrai, de façon analogue, la décision d'acquérir une formation développée à l'externe peut aussi conduire à repousser le choix de la ressource qui facilitera celle-ci. Indépendamment du choix de développer à l'interne (ou non) la formation, il demeure essentiel que les personnes retenues aient les connaissances et les compétences requises pour bien remplir ce rôle."
+  },
+  {
+    q: "Pour choisir un bon formateur, on doit se demander s'il faut faire appel à une ressource interne ou externe à l'organisation, pour ce faire, quels sont les facteurs qui peuvent guider la réflexion?",
+    a: "(a) la disponibilité des ressources internes, (b) le niveau d'expertise requis, (c) les objectifs recherchés et (d) les disponibilités budgétaires. Le tableau 5.2 décrit les avantages associés à chacun de ces critères selon qu'il est question de choisir un formateur venant de l'organisation (interne) ou de l'extérieur (externe)."
+  },
+  {
+    q: "Superutilisateur definition?",
+    a: "Ressource désignée dans une organisation pour apprendre le fonctionnement d'un nouveau système et transférer dans le cadre du travail ces connaissances aux employés ayant à utiliser ce système."
+  },
+  {
+    q: "Blues du formateur definition?",
+    a: "Etat plus ou moins persistant vécu à la fin d'un projet de formation, se traduisant par une impression de recul ou de rétrogradation."
+  },
+  {
+    q: "Dans les cas où la formation se déploie en groupe, deux éléments supplémentaires doivent être pris en consideration, lesquels?",
+    a: "Le premier renvoie au nombre d'apprenants. Le deuxième élément important à considérer est la composition des groups"
+  },
+  {
+    q: "Qu’est-ce que le plan spécifique de formation?",
+    a: "C’est un document qui regroupe toutes les informations pertinentes issues de l’étape de design afin d’orienter le développement et la mise en œuvre d’une activité de formation."
+  },
+  {
+    q: "vrai ou faux; La Loi favorisant le développement et la reconnaissance des compétences de la mand'auvre précise un certain nombre de moyens pour que les formations puissent etre admissibles comme dépenses de formation?",
+    a: "Vrai, pour que les dépenses associées soient admissibles selon les paramètres de la Loi, Il demeure que ce plan doit avoir été établi après la consultation d'un comité au sein de l'entreprise, pré-térablement composé de représentants de l'employeur et des employés. En outre, le règlement précise que l'organisation doit pouvoir être en mesure de délivrer annuellement des attestations à tout employé ayant reçu une formation."
+  },
+  {
+    q: "Quel sont les principaux points d’intérêt d’un synopsis de formation?",
+    a: "Il y a deux principaux points d’intérêt au synopsis de formation : celui-ci est d’abord un outil de travail; ensuite, il permet, par un schéma, de regrouper en une page les principales conclusions de l’analyse des besoins, permettant ainsi d’avoir une perspective plus large de la formation. Voir aussi la figure 5.2 et son exemple à la figure 5.3, page 171."
+  },
+  {
+    q: "Sur quels critères baserez-vous votre choix quant au médium de formation que vous retiendrez pour votre projet de formation?",
+    a: "Plusieurs critères peuvent vous aider à déterminer ou à choisir le médium approprié pour un futur projet de formation. On peut regrouper les critères en quatre catégories : les apprenants, les apprentissages, les aspects logistiques et les contraintes organisationnelles. Nous vous invitons à consulter la page 172 de votre manuel de base pour cibler les critères à retenir pour l’une ou l’autre de ces quatre catégories."
+  },
+  {
+    q: "vrai ou faux; du point de vue légal, le temps passé en formation est généralement considéré comme du temps de travail et doit être rétribué comme tel?",
+    a: "vrai c’est illegal de former sans remuneration"
+  }
+];let cards = [...originalCards];
+const markedCards = new Set();
+
+function updateErrorCount() {
+  const count = markedCards.size;
+  document.getElementById('errorBadge').textContent = count;
+  document.getElementById('modalErrorCount').textContent = count;
+
+  const total = cards.length;
+  const successful = Math.max(0, total - count);
+  const percentage = total ? Math.round((successful / total) * 100) : 0;
+  document.getElementById('successPercent').textContent = percentage + ' %';
+  document.getElementById('successFill').style.width = percentage + '%';
+  document.querySelector('.success-track').setAttribute('aria-valuenow', percentage);
+  document.getElementById('successDetails').textContent =
+    `${count} carte${count === 1 ? '' : 's'} en rouge · ${successful} carte${successful === 1 ? '' : 's'} réussie${successful === 1 ? '' : 's'} sur ${total}`;
+}
+
+function createCardFace(item, isErrorList = false) {
+  const wrap = document.createElement('div');
+  if (isErrorList) {
+    wrap.className = 'error-card';
+    wrap.innerHTML = `<button class="unmark-btn" type="button" aria-label="Retirer cette carte des cartes d'erreurs" title="Remettre cette carte en normal"></button>
+      <strong>${escapeHtml(item.q)}</strong><div class="answer">${escapeHtml(item.a)}</div>`;
+    wrap.querySelector('.unmark-btn').addEventListener('click', (event) => {
+      event.stopPropagation();
+      markedCards.delete(item);
+      render();
+      renderErrorCards();
+    });
+    wrap.addEventListener('click', () => wrap.classList.toggle('flipped'));
+    return wrap;
+  }
+
+  wrap.className = 'card-wrap' + (markedCards.has(item) ? ' marked' : '');
+  wrap.innerHTML = `
+    <div class="card">
+      <div class="face front">
+        <div>${escapeHtml(item.q)}</div>
+        <div class="hint">Clique pour voir la réponse 👆</div>
+      </div>
+      <div class="face back">
+        <div>${escapeHtml(item.a)}</div>
+        <div class="hint">Clique pour revenir à la question 👆</div>
+      </div>
+    </div>`;
+
+  const markBtn = document.createElement('button');
+  markBtn.className = 'mark-btn' + (markedCards.has(item) ? ' marked' : '');
+  markBtn.type = 'button';
+  markBtn.setAttribute('aria-label', markedCards.has(item) ? 'Retirer des cartes d’erreurs' : 'Marquer cette question comme erreur');
+  markBtn.title = markedCards.has(item) ? 'Carte marquée comme erreur' : 'Marquer comme erreur';
+  wrap.appendChild(markBtn);
+
+  markBtn.addEventListener('click', (event) => {
+    event.stopPropagation();
+    if (markedCards.has(item)) markedCards.delete(item);
+    else markedCards.add(item);
+    render();
+    renderErrorCards();
+  });
+
+  wrap.addEventListener('click', () => {
+    wrap.querySelector('.card').classList.toggle('flipped');
+  });
+  return wrap;
+}
+
+function render() {
+  const container = document.getElementById('cards');
+  container.innerHTML = '';
+  document.getElementById('count').textContent = cards.length;
+  cards.forEach(item => container.appendChild(createCardFace(item)));
+  updateErrorCount();
+}
+
+function renderErrorCards() {
+  const container = document.getElementById('errorCardsList');
+  container.innerHTML = '';
+  const errorCards = cards.filter(item => markedCards.has(item));
+  document.getElementById('modalErrorCount').textContent = errorCards.length;
+  document.getElementById('errorBadge').textContent = errorCards.length;
+  if (errorCards.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'empty-errors';
+    empty.textContent = 'Aucune carte en rouge pour le moment. Clique sur le point rouge d’une carte pour l’ajouter ici.';
+    container.appendChild(empty);
+    return;
+  }
+  errorCards.forEach(item => container.appendChild(createCardFace(item, true)));
+}
+
+const errorModalOverlay = document.getElementById('errorModalOverlay');
+document.getElementById('errorBubble').addEventListener('click', () => {
+  renderErrorCards();
+  errorModalOverlay.classList.add('open');
+});
+document.getElementById('closeErrorModal').addEventListener('click', () => errorModalOverlay.classList.remove('open'));
+errorModalOverlay.addEventListener('click', event => {
+  if (event.target === errorModalOverlay) errorModalOverlay.classList.remove('open');
+});
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape') errorModalOverlay.classList.remove('open');
+});
+
+function escapeHtml(value) {
+  return value
+    .replaceAll('&','&amp;')
+    .replaceAll('<','&lt;')
+    .replaceAll('>','&gt;')
+    .replaceAll('"','&quot;')
+    .replaceAll("'","&#039;");
+}
+
+document.getElementById('shuffleBtn').addEventListener('click', () => {
+  for (let i = cards.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [cards[i], cards[j]] = [cards[j], cards[i]];
+  }
+  render();
+  window.scrollTo({top: 0, behavior: 'smooth'});
+});
+
+render();
+</script>
+</body>
+</html>
